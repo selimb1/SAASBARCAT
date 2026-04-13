@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
 import {
-  Save, Check, AlertCircle, X, ChevronRight,
+  Save, Check, CheckCircle, AlertCircle, X, ChevronRight,
   Maximize2, Minimize2, Image as ImageIcon, Loader2
 } from "lucide-react";
 import { api } from "@/lib/api";
