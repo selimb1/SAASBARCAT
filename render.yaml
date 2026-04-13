@@ -1,0 +1,64 @@
+version: "1"
+
+services:
+  # Base de Datos PostgreSQL
+  - type: psqldb
+    name: contabilizar-db
+    plan: free # Cambiar a starter en produccion
+    region: ohio
+    postgresMajorVersion: "16"
+
+  # Redis (Para las colas de procesamiento de IA)
+  - type: redis
+    name: contabilizar-redis
+    plan: free
+    region: ohio
+    maxmemoryPolicy: noeviction
+
+  # Backend Principal (FastAPI)
+  - type: web
+    name: contabilizar-api
+    env: python
+    buildCommand: "cd backend && pip install -r requirements.txt"
+    startCommand: "cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
+    plan: free # Cambiar a starter/pro en produccion
+    region: ohio
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: contabilizar-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: contabilizar-redis
+          property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false # Deberás cargar esta key manualmente en el dashboard de Render
+      - key: SECRET_KEY
+        generateValue: true
+      - key: AWS_ACCESS_KEY_ID
+        value: "test" # En produccion apuntar al bucket real
+
+  # Worker Asíncrono (Celery - Para procesar los comprobantes en background)
+  - type: worker
+    name: contabilizar-worker
+    env: python
+    buildCommand: "cd backend && pip install -r requirements.txt"
+    startCommand: "cd backend && celery -A app.workers.tasks.celery_app worker --loglevel=info"
+    plan: free # Cambiar a starter/pro en produccion
+    region: ohio
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: contabilizar-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: contabilizar-redis
+          property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        value: "test"
