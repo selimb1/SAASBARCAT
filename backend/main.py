@@ -37,9 +37,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="contabilizAR API",
-    description="SaaS de automatización contable para Argentina. OCR + IA para Holistor, Tango Gestión y Bejerman.",
-    version="1.0.0",
+    title="CONTAMAX API",
+    description="SaaS de automatización contable para Argentina. OCR + IA para Tango Gestión, Holistor, Bejerman y más.",
+    version="2.0.0",
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
     lifespan=lifespan,

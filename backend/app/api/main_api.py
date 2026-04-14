@@ -2,7 +2,7 @@ import uuid
 import os
 import tempfile
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -60,7 +60,7 @@ async def get_dashboard_stats(
     result = await db.execute(select(Estudio).where(Estudio.id == estudio_id))
     estudio = result.scalar_one()
 
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
 
     # Comprobantes hoy
     result = await db.execute(
@@ -252,7 +252,7 @@ async def lote_stats(
     result = await db.execute(
         select(func.count(Comprobante.id)).where(
             Comprobante.lote_id == lote_id,
-            Comprobante.alertas_validacion != None,
+            Comprobante.alertas_validacion.isnot(None),
         )
     )
     con_alertas = result.scalar() or 0

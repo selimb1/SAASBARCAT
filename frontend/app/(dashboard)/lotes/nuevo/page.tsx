@@ -4,11 +4,12 @@ import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Upload, X, FileText, Image as ImageIcon, CheckCircle2,
-  AlertCircle, Loader2, ArrowRight, FolderOpen
+  Upload, X, FileText, CheckCircle2,
+  AlertCircle, Loader2, ArrowRight, FolderOpen, Camera
 } from "lucide-react";
 import { api, apiUpload } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { CameraCapture } from "@/components/upload/CameraCapture";
 
 interface FilePreview {
   file: File;
@@ -24,6 +25,18 @@ export default function NuevoLotePage() {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
+  const [cameraOpen, setCameraOpen] = useState(false);
+
+  // Recibe fotos capturadas por CameraCapture y las agrega a la cola
+  const handleCameraPhotos = useCallback((capturedFiles: File[]) => {
+    const newPreviews: FilePreview[] = capturedFiles.map((f) => ({
+      file: f,
+      id: Math.random().toString(36).slice(2),
+      preview: URL.createObjectURL(f),
+      status: "pending",
+    }));
+    setFiles((prev) => [...prev, ...newPreviews].slice(0, 200));
+  }, []);
 
   const onDrop = useCallback((accepted: File[]) => {
     const newFiles: FilePreview[] = accepted.map((f) => ({
@@ -84,6 +97,17 @@ export default function NuevoLotePage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      {/* Camera modal */}
+      <AnimatePresence>
+        {cameraOpen && (
+          <CameraCapture
+            onPhotos={handleCameraPhotos}
+            onClose={() => setCameraOpen(false)}
+            maxPhotos={50}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-dark-50">Nuevo Lote</h1>
@@ -108,28 +132,58 @@ export default function NuevoLotePage() {
         </div>
       </div>
 
-      {/* Dropzone */}
-      <div
-        {...getRootProps()}
-        className={`dropzone min-h-52 ${isDragActive ? "dropzone-active" : ""}`}
-        id="dropzone-area"
-      >
-        <input {...getInputProps()} id="file-input" />
-        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300 ${
-          isDragActive ? "bg-brand-500/30 shadow-glow-brand" : "bg-dark-800 border border-dark-700"
-        }`}>
-          {isDragActive
-            ? <FolderOpen className="w-7 h-7 text-brand-400" />
-            : <Upload className="w-7 h-7 text-dark-400" />
-          }
+      {/* Captura con cámara — prominente en mobile */}
+      <div className="card p-5">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center shrink-0">
+            <Camera className="w-5 h-5 text-brand-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-dark-200">Capturar con cámara</p>
+            <p className="text-xs text-dark-500 mt-0.5">
+              Ideal para celular — guía de encuadre, detección de luz y compresión automática
+            </p>
+          </div>
+          <button
+            onClick={() => setCameraOpen(true)}
+            id="abrir-camara-btn"
+            className="btn-primary btn-sm shrink-0"
+          >
+            <Camera className="w-4 h-4" />
+            Abrir cámara
+          </button>
         </div>
-        <div className="text-center">
-          <p className="text-dark-200 font-medium">
-            {isDragActive ? "Soltá los archivos acá" : "Arrastrá archivos o hacé clic para seleccionar"}
-          </p>
-          <p className="text-dark-500 text-sm mt-1">
-            JPG · PNG · PDF · WEBP · hasta 200 archivos · máx 20 MB c/u
-          </p>
+
+        {/* Separador "o" */}
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1 h-px bg-dark-800" />
+          <span className="text-xs text-dark-600 font-medium">o subí archivos</span>
+          <div className="flex-1 h-px bg-dark-800" />
+        </div>
+
+        {/* Dropzone */}
+        <div
+          {...getRootProps()}
+          className={`dropzone min-h-36 ${isDragActive ? "dropzone-active" : ""}`}
+          id="dropzone-area"
+        >
+          <input {...getInputProps()} id="file-input" />
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 ${
+            isDragActive ? "bg-brand-500/30 shadow-glow-brand" : "bg-dark-800 border border-dark-700"
+          }`}>
+            {isDragActive
+              ? <FolderOpen className="w-6 h-6 text-brand-400" />
+              : <Upload className="w-6 h-6 text-dark-400" />
+            }
+          </div>
+          <div className="text-center">
+            <p className="text-dark-200 font-medium text-sm">
+              {isDragActive ? "Soltá los archivos acá" : "Arrastrá o seleccioná archivos"}
+            </p>
+            <p className="text-dark-500 text-xs mt-1">
+              JPG · PNG · PDF · WEBP · hasta 200 archivos · máx 20 MB c/u
+            </p>
+          </div>
         </div>
       </div>
 

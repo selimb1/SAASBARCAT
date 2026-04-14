@@ -1,64 +1,97 @@
 version: "1"
 
 services:
-  # Base de Datos PostgreSQL
+  # ── Base de Datos PostgreSQL ─────────────────────────────────────────────
   - type: psqldb
-    name: contabilizar-db
-    plan: free # Cambiar a starter en produccion
+    name: contamax-db
+    plan: free           # → starter en producción ($7/mes)
     region: ohio
     postgresMajorVersion: "16"
 
-  # Redis (Para las colas de procesamiento de IA)
+  # ── Redis (Broker de Celery) ─────────────────────────────────────────────
   - type: redis
-    name: contabilizar-redis
-    plan: free
+    name: contamax-redis
+    plan: free           # → starter en producción ($10/mes)
     region: ohio
     maxmemoryPolicy: noeviction
 
-  # Backend Principal (FastAPI)
+  # ── Backend Principal (FastAPI) ──────────────────────────────────────────
   - type: web
-    name: contabilizar-api
+    name: contamax-api
     env: python
-    buildCommand: "cd backend && pip install -r requirements.txt"
-    startCommand: "cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
-    plan: free # Cambiar a starter/pro en produccion
     region: ohio
+    plan: free           # → starter en producción ($7/mes)
+    buildCommand: "pip install -r backend/requirements.txt"
+    startCommand: "cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT --workers 2"
+    healthCheckPath: /health
     envVars:
+      - key: APP_NAME
+        value: CONTAMAX
       - key: DATABASE_URL
         fromDatabase:
-          name: contabilizar-db
+          name: contamax-db
           property: connectionString
       - key: REDIS_URL
         fromService:
           type: redis
-          name: contabilizar-redis
+          name: contamax-redis
           property: connectionString
-      - key: GEMINI_API_KEY
-        sync: false # Deberás cargar esta key manualmente en el dashboard de Render
       - key: SECRET_KEY
         generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false    # ← cargar manualmente en Render Dashboard → Environment
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: DEBUG
+        value: "false"
       - key: AWS_ACCESS_KEY_ID
-        value: "test" # En produccion apuntar al bucket real
+        sync: false    # ← credenciales S3/R2 manualmente
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: us-east-1
+      - key: S3_BUCKET_NAME
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false    # ← ej: ["https://contamax.vercel.app"]
+      - key: MAX_FILES_PER_BATCH
+        value: "200"
+      - key: MAX_FILE_SIZE_MB
+        value: "20"
+      - key: IMAGE_RETENTION_DAYS
+        value: "90"
+      - key: SENTRY_DSN
+        sync: false    # ← opcional, para monitoreo de errores
 
-  # Worker Asíncrono (Celery - Para procesar los comprobantes en background)
+  # ── Worker Celery (Procesamiento asíncrono de comprobantes) ──────────────
   - type: worker
-    name: contabilizar-worker
+    name: contamax-worker
     env: python
-    buildCommand: "cd backend && pip install -r requirements.txt"
-    startCommand: "cd backend && celery -A app.workers.tasks.celery_app worker --loglevel=info"
-    plan: free # Cambiar a starter/pro en produccion
     region: ohio
+    plan: free           # → starter en producción ($7/mes)
+    buildCommand: "pip install -r backend/requirements.txt"
+    startCommand: "cd backend && celery -A app.workers.tasks.celery_app worker --loglevel=info --concurrency=2"
     envVars:
+      - key: APP_NAME
+        value: CONTAMAX
       - key: DATABASE_URL
         fromDatabase:
-          name: contabilizar-db
+          name: contamax-db
           property: connectionString
       - key: REDIS_URL
         fromService:
           type: redis
-          name: contabilizar-redis
+          name: contamax-redis
           property: connectionString
       - key: GEMINI_API_KEY
         sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
       - key: AWS_ACCESS_KEY_ID
-        value: "test"
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_BUCKET_NAME
+        sync: false
+      - key: SENTRY_DSN
+        sync: false

@@ -205,6 +205,22 @@ async def extract_with_gemini(image_path: str, ocr_text: Optional[str] = None) -
         raise
 
 
+def parse_safe_float(val) -> float:
+    if val is None or val == "":
+        return 0.0
+    if isinstance(val, (int, float)):
+        return float(val)
+    val_str = str(val).replace("$", "").replace(" ", "").strip()
+    if "," in val_str and "." in val_str:
+        val_str = val_str.replace(".", "").replace(",", ".")
+    elif "," in val_str:
+        val_str = val_str.replace(",", ".")
+    try:
+        return float(val_str)
+    except ValueError:
+        return 0.0
+
+
 def validate_extraction(data: dict) -> list[str]:
     """
     Valida los datos extraídos y retorna lista de alertas.
@@ -212,15 +228,15 @@ def validate_extraction(data: dict) -> list[str]:
     alertas = []
 
     # Validar suma de importes
-    neto = float(data.get("importe_neto_gravado") or 0)
-    iva21 = float(data.get("iva_21") or 0)
-    iva105 = float(data.get("iva_105") or 0)
-    iva27 = float(data.get("iva_27") or 0)
-    exento = float(data.get("importe_exento") or 0)
-    no_grav = float(data.get("importe_no_gravado") or 0)
-    percs = float(data.get("importe_percepciones") or 0)
-    retenc = float(data.get("importe_retenciones") or 0)
-    total = float(data.get("importe_total") or 0)
+    neto = parse_safe_float(data.get("importe_neto_gravado"))
+    iva21 = parse_safe_float(data.get("iva_21"))
+    iva105 = parse_safe_float(data.get("iva_105"))
+    iva27 = parse_safe_float(data.get("iva_27"))
+    exento = parse_safe_float(data.get("importe_exento"))
+    no_grav = parse_safe_float(data.get("importe_no_gravado"))
+    percs = parse_safe_float(data.get("importe_percepciones"))
+    retenc = parse_safe_float(data.get("importe_retenciones"))
+    total = parse_safe_float(data.get("importe_total"))
 
     calculado = neto + iva21 + iva105 + iva27 + exento + no_grav + percs - retenc
     if total > 0 and abs(calculado - total) > 1.5:

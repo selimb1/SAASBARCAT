@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Package, FileCheck2, Download,
   Users, Settings, LogOut, FileText, ChevronRight,
-  Bell, Menu, X, HelpCircle
+  Bell, Menu, X, HelpCircle, Building2
 } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,6 +17,7 @@ const navItems = [
   { href: "/dashboard/comprobantes", icon: FileCheck2, label: "Comprobantes" },
   { href: "/dashboard/exportar", icon: Download, label: "Exportar" },
   { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
+  { href: "/dashboard/conciliacion", icon: Building2, label: "Conciliación" },
 ];
 
 const bottomItems = [
@@ -38,7 +39,8 @@ export function Sidebar() {
             <FileText className="w-4 h-4 text-white" />
           </div>
           <div>
-            <span className="text-base font-bold text-white">contabiliz<span className="text-brand-400">AR</span></span>
+            <span className="text-base font-bold text-white">CONTA<span className="text-brand-400">MAX</span></span>
+            <p className="text-[10px] text-dark-500 -mt-0.5 font-medium tracking-wide">Contabilidad con IA</p>
           </div>
         </Link>
       </div>
@@ -69,13 +71,14 @@ export function Sidebar() {
           <Link
             key={label}
             href={href}
+            onClick={() => setMobileOpen(false)}
             className="sidebar-item"
           >
             <Icon className="w-4 h-4" />
             <span>{label}</span>
           </Link>
         ))}
-        <button onClick={logout} className="sidebar-item w-full text-danger-400 hover:text-danger-300 hover:bg-danger-500/10">
+        <button onClick={() => { logout(); setMobileOpen(false); }} className="sidebar-item w-full text-danger-400 hover:text-danger-300 hover:bg-danger-500/10">
           <LogOut className="w-4 h-4" />
           <span>Cerrar sesión</span>
         </button>
@@ -111,7 +114,7 @@ export function Sidebar() {
           <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center">
             <FileText className="w-3.5 h-3.5 text-white" />
           </div>
-          <span className="text-sm font-bold text-white">contabiliz<span className="text-brand-400">AR</span></span>
+          <span className="text-sm font-bold text-white">CONTA<span className="text-brand-400">MAX</span></span>
         </Link>
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
